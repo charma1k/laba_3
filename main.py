@@ -4,6 +4,7 @@
 # При этом матрица А не меняется. После чего вычисляется выражение: AF– KA^T . 
 # Выводятся по мере формирования А, F и все матричные операции последовательно.
 
+
 import random
 
 def generate_matrix(size):
@@ -19,45 +20,14 @@ def print_matrix(matrix):
     for row in matrix:
         print(" ".join(str(elem) for elem in row))
 
-def submatrix(matrix, row_start, row_end, col_start, col_end):
-    return [row[col_start:col_end] for row in matrix[row_start:row_end]]
-
-def check_condition(submatrix, k_value):
-    even_columns_sum = 0
-    for col in range(len(submatrix[0])):
-        for row in range(len(submatrix)):
-            if submatrix[row][col] > k_value:
-                even_columns_sum += 1
-
-    odd_rows_sum = 0
-    for row in range(1, len(submatrix), 2):
-        for col in range(len(submatrix[row])):
-            odd_rows_sum += submatrix[row][col]
-
-    return even_columns_sum > odd_rows_sum
-
-def swap_submatrices(matrix, sub1, sub2):
-    for i in range(len(sub1)):
-        for j in range(len(sub1[i])):
-            matrix[sub1[i][j]], matrix[sub2[i][j]] = matrix[sub2[i][j]], matrix[sub1[i][j]]
-
-def transpose(matrix):
-    transposed = [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
-    return transposed
-
-def matrix_multiplication(matrix1, matrix2):
-    result = []
-    for i in range(len(matrix1)):
-        row = []
-        for j in range(len(matrix2[0])):
-            elem = sum(matrix1[i][k] * matrix2[k][j] for k in range(len(matrix2)))
-            row.append(elem)
-        result.append(row)
-    return result
-
-def scalar_multiplication(matrix, scalar):
-    result = [[matrix[i][j] * scalar for j in range(len(matrix[0]))] for i in range(len(matrix))]
-    return result
+def generate_triangle_submatrix(size, triangle_type):
+    submatrix = []
+    for i in range(size):
+        if triangle_type == 'upper':
+            submatrix.append([0] * i + [i + 1] * (size - i))
+        elif triangle_type == 'lower':
+            submatrix.append([i + 1] * (i + 1) + [0] * (size - i - 1))
+    return submatrix
 
 matrix_size = int(input("Введите размер матрицы: "))
 
@@ -65,10 +35,12 @@ matrix_a = generate_matrix(matrix_size)
 print("Матрица A:")
 print_matrix(matrix_a)
 
-matrix_b = submatrix(matrix_a, 0, matrix_size//2, 0, matrix_size//2)
-matrix_c = submatrix(matrix_a, 0, matrix_size//2, matrix_size//2, matrix_size)
-matrix_d = submatrix(matrix_a, matrix_size//2, matrix_size, 0, matrix_size//2)
-matrix_e = submatrix(matrix_a, matrix_size//2, matrix_size, matrix_size//2, matrix_size)
+size_half = matrix_size // 2
+matrix_b = generate_triangle_submatrix(size_half, 'upper')
+matrix_c = generate_triangle_submatrix(size_half, 'lower')
+matrix_d = generate_triangle_submatrix(size_half, 'upper')
+matrix_e = generate_triangle_submatrix(size_half, 'lower')
+
 print("\nПодматрица B:")
 print_matrix(matrix_b)
 print("\nПодматрица C:")
@@ -78,17 +50,28 @@ print_matrix(matrix_d)
 print("\nПодматрица E:")
 print_matrix(matrix_e)
 
-k_value = 5
-if check_condition(matrix_e, k_value):
-    swap_submatrices(matrix_e, [[0, 0], [1, 0]], [[1, 1], [0, 1]])
-else:
-    swap_submatrices(matrix_b, [[0, 0], [1, 0]], [[1, 1], [0, 1]])
-print("\nМатрица E после преобразования:")
-print_matrix(matrix_e)
+def count_greater_than_K_in_even_columns(matrix, K):
+    count = 0
+    for i in range(len(matrix) // 2):
+        for j in range(0, i + 1, 2):
+            if matrix[i][j] > K:
+                count += 1
+    for i in range(len(matrix) // 2, len(matrix)):
+        for j in range(0, len(matrix) - (i + 1), 2):
+            if matrix[i][j] > K:
+                count += 1
+    return count
 
-matrix_f_transposed = transpose(matrix_e)
-result = matrix_multiplication(matrix_a, matrix_e)
-k_times_a_transposed = scalar_multiplication(transpose(matrix_a), k_value)
-final_result = [[result[i][j] - k_times_a_transposed[i][j] for j in range(len(result[0]))] for i in range(len(result))]
-print("\nРезультат выражения A*F - K*AT:")
-print_matrix(final_result)
+def product_in_odd_rows(matrix):
+    product = 1
+    for i in range(len(matrix) // 2, len(matrix), 3):
+        for j in range(len(matrix) - (i + 1) + 1, len(matrix) // 2):
+            product *= matrix[i][j]
+    for i in range(len(matrix) // 2, len(matrix), 3):
+        for j in range(len(matrix) // 2, i):
+            product *= matrix[i][j]
+    return product
+
+K_value = 5
+print("\nКоличество элементов больше K в четных столбцах:", count_greater_than_K_in_even_columns(matrix_e, K_value))
+print("Произведение элементов в нечетных строках:", product_in_odd_rows(matrix_e))
